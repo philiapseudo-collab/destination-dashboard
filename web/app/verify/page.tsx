@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authAPI } from '@/lib/api'
 import { toast } from 'sonner'
 
-export default function VerifyPage() {
+function VerifyForm() {
     const [code, setCode] = useState('')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
@@ -103,5 +103,20 @@ export default function VerifyPage() {
                 </button>
             </div>
         </div>
+    )
+}
+
+export default function VerifyPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="text-center">
+                    <div className="text-6xl mb-4">🔐</div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <VerifyForm />
+        </Suspense>
     )
 }

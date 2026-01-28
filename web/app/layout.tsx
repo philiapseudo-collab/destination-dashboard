@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Toaster } from '@/components/ui/sonner'
@@ -11,8 +11,13 @@ export const metadata: Metadata = {
     title: 'Destination Manager',
     description: 'Manage your bar inventory and orders',
     manifest: '/manifest.json',
+}
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
     themeColor: '#000000',
-    viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 }
 
 export default function RootLayout({
