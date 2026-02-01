@@ -52,6 +52,13 @@ Create a `.env.local` file:
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
+### Railway (Production)
+
+1. In your **frontend** Railway service, add a variable:
+   - **Name:** `NEXT_PUBLIC_API_URL`
+   - **Value:** Your backend's public URL (e.g. `https://your-backend-service.up.railway.app`)
+2. Redeploy the frontend so it picks up the variable. The app will then call the live backend.
+
 ### Build for Production
 
 ```bash
