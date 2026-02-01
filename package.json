@@ -6,7 +6,7 @@
   "scripts": {
     "install": "cd web && npm install",
     "build": "cd web && npm run build",
-    "start": "cd web/.next/standalone && node server.js"
+    "start": "cd web/.next/standalone && HOSTNAME=0.0.0.0 node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
