@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productsAPI } from '@/lib/api'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Minus, Edit2, Check, X } from 'lucide-react'
+import { Plus, Minus, Edit2, Check, X, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import type { Product } from '@/types'
+
+function matchesSearch(product: Product, query: string): boolean {
+    if (!query.trim()) return true
+    const q = query.trim().toLowerCase()
+    const name = (product.name ?? '').toLowerCase()
+    const desc = (product.description ?? '').toLowerCase()
+    const cat = (product.category ?? '').toLowerCase()
+    return name.includes(q) || desc.includes(q) || cat.includes(q)
+}
 
 export default function StockPage() {
     const queryClient = useQueryClient()
     const [editingPrice, setEditingPrice] = useState<string | null>(null)
     const [priceValue, setPriceValue] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
 
     const { data: products } = useQuery({
         queryKey: ['products'],
@@ -84,13 +95,24 @@ export default function StockPage() {
         return '🍹'
     }
 
-    const groupedProducts = products?.reduce((acc, product) => {
-        if (!acc[product.category]) {
-            acc[product.category] = []
-        }
-        acc[product.category].push(product)
-        return acc
-    }, {} as Record<string, Product[]>)
+    const filteredProducts = useMemo(() => {
+        if (!products) return []
+        if (!searchQuery.trim()) return products
+        return products.filter((p) => matchesSearch(p, searchQuery))
+    }, [products, searchQuery])
+
+    const groupedProducts = useMemo(() => {
+        return filteredProducts.reduce((acc, product) => {
+            if (!acc[product.category]) {
+                acc[product.category] = []
+            }
+            acc[product.category].push(product)
+            return acc
+        }, {} as Record<string, Product[]>)
+    }, [filteredProducts])
+
+    const hasSearch = searchQuery.trim().length > 0
+    const hasResults = Object.keys(groupedProducts).length > 0
 
     return (
         <div className="space-y-6">
@@ -98,6 +120,35 @@ export default function StockPage() {
                 <h2 className="text-2xl font-bold">Inventory</h2>
                 <p className="text-muted-foreground">Manage stock and prices</p>
             </div>
+
+            {/* Search */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                    type="search"
+                    placeholder="Search by name, description, or category..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-9"
+                    aria-label="Search inventory"
+                />
+                {searchQuery && (
+                    <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                        aria-label="Clear search"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {hasSearch && !hasResults && (
+                <p className="text-muted-foreground text-center py-8">
+                    No products match &quot;{searchQuery.trim()}&quot;. Try a different search or clear the search.
+                </p>
+            )}
 
             {groupedProducts &&
                 Object.entries(groupedProducts).map(([category, items]) => (
