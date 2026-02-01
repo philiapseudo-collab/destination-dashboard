@@ -24,9 +24,10 @@ export default function StockPage() {
     const [priceValue, setPriceValue] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
 
-    const { data: products } = useQuery({
+    const { data: products, isError: productsError, error: productsErrorObj, refetch: refetchProducts } = useQuery({
         queryKey: ['products'],
         queryFn: productsAPI.getAll,
+        retry: false,
     })
 
     const updateStockMutation = useMutation({
@@ -95,11 +96,11 @@ export default function StockPage() {
         return '🍹'
     }
 
+    const productList = Array.isArray(products) ? products : []
     const filteredProducts = useMemo(() => {
-        if (!products) return []
-        if (!searchQuery.trim()) return products
-        return products.filter((p) => matchesSearch(p, searchQuery))
-    }, [products, searchQuery])
+        if (!searchQuery.trim()) return productList
+        return productList.filter((p) => matchesSearch(p, searchQuery))
+    }, [productList, searchQuery])
 
     const groupedProducts = useMemo(() => {
         return filteredProducts.reduce((acc, product) => {
@@ -144,13 +145,39 @@ export default function StockPage() {
                 )}
             </div>
 
-            {hasSearch && !hasResults && (
+            {productsError && (
+                <div className="text-center py-12 text-muted-foreground">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <p className="font-medium text-foreground mb-1">Could not load inventory</p>
+                    <p className="text-sm mb-4">
+                        {String(productsErrorObj?.message ?? '').toLowerCase().includes('unauthorized')
+                            ? 'Please log in again to continue.'
+                            : 'Check your connection and try again.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                            onClick={() => refetchProducts()}
+                            className="px-4 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90"
+                        >
+                            Try again
+                        </button>
+                        <a
+                            href="/login"
+                            className="px-4 py-2 rounded-md border border-border font-medium hover:bg-secondary"
+                        >
+                            Log in again
+                        </a>
+                    </div>
+                </div>
+            )}
+
+            {hasSearch && !hasResults && !productsError && (
                 <p className="text-muted-foreground text-center py-8">
                     No products match &quot;{searchQuery.trim()}&quot;. Try a different search or clear the search.
                 </p>
             )}
 
-            {groupedProducts &&
+            {!productsError && groupedProducts &&
                 Object.entries(groupedProducts).map(([category, items]) => (
                     <div key={category} className="space-y-3">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
