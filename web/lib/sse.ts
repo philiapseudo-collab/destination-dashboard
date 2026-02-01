@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+import { getApiBaseUrl } from '@/lib/api'
 
 interface SSEEvent {
     type: string
@@ -25,7 +24,7 @@ export function useSSE(handlers: SSEHandlers) {
 
     useEffect(() => {
         const connect = () => {
-            const url = `${API_BASE_URL}/api/admin/events`
+            const url = `${getApiBaseUrl()}/api/admin/events`
             const eventSource = new EventSource(url, { withCredentials: true })
             eventSourceRef.current = eventSource
 

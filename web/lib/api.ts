@@ -1,17 +1,36 @@
 import type { Product, Order, Analytics, RevenueTrend, TopProduct } from '@/types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const PRODUCTION_API_URL = 'https://destination-cocktails-production.up.railway.app'
+
+export function getApiBaseUrl(): string {
+    if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+        return process.env.NEXT_PUBLIC_API_URL || PRODUCTION_API_URL
+    }
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+}
+
+let authToken: string | null = null
+
+export function setAuthToken(token: string | null) {
+    authToken = token
+}
 
 async function fetchAPI(endpoint: string, options?: RequestInit) {
-    const url = `${API_BASE_URL}${endpoint}`
+    const baseUrl = getApiBaseUrl()
+    const url = `${baseUrl}${endpoint}`
+
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+    }
+    if (authToken) {
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${authToken}`
+    }
 
     const response = await fetch(url, {
         ...options,
-        credentials: 'include', // Include cookies for JWT
-        headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers,
-        },
+        credentials: 'include',
+        headers,
     })
 
     if (!response.ok) {
@@ -32,16 +51,23 @@ export const authAPI = {
     },
 
     verifyOTP: async (phone: string, code: string) => {
-        return fetchAPI('/api/admin/auth/verify-otp', {
+        const data = await fetchAPI('/api/admin/auth/verify-otp', {
             method: 'POST',
             body: JSON.stringify({ phone, code }),
-        })
+        }) as Record<string, unknown>
+        const token = data?.token ?? data?.access_token ?? data?.jwt
+        if (typeof token === 'string') {
+            setAuthToken(token)
+        }
+        return data
     },
 
     logout: async () => {
-        return fetchAPI('/api/admin/auth/logout', {
+        const result = await fetchAPI('/api/admin/auth/logout', {
             method: 'POST',
         })
+        setAuthToken(null)
+        return result
     },
 
     getMe: async (): Promise<any> => {
